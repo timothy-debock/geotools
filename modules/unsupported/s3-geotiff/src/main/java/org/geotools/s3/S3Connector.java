@@ -16,11 +16,14 @@
  */
 package org.geotools.s3;
 
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AnonymousAWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.S3ClientOptions;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
@@ -36,6 +39,8 @@ public class S3Connector {
     private final static Logger LOGGER = Logger
             .getLogger(S3Utils.class.getName());
 
+    private String url;
+
     private String regionString;
     private boolean useAnon = false;
 
@@ -47,13 +52,14 @@ public class S3Connector {
     /**
      * Create an S3 connector from a URI-ish S3:// string. Notably, this constructor supports awsRegion and useAnon
      * as query parameters to control these settings.
-     *
+     * <p>
      * Also of note, this URL is largely ignored outside of the query parameters. Mainly this is used to control
      * authentication options
      *
      * @param input an s3:// style URL.
      */
     S3Connector(String input) {
+        this.url = input;
         //Parse region and anon from URL
         try {
             URI s3Uri = new URI(input);
@@ -95,16 +101,35 @@ public class S3Connector {
         if (useAnon) {
             s3 = new AmazonS3Client(new AnonymousAWSCredentials());
         } else {
-            s3 = new AmazonS3Client();
+            AWSCredentials credentials = new BasicAWSCredentials("FAT7UNGHOR4ZTV2ORYH6", "VXN7pTVKj46aeUAqmnoaP16kJhYDW7alP9TRzxSO");
+            s3 = new AmazonS3Client(credentials);
         }
 
         s3.setRegion(Region.getRegion(region));
 
+        if (url != null && url.startsWith("http")) {
+            String endpoint = getEndpoint();
+            s3.setEndpoint(endpoint);
+            final S3ClientOptions clientOptions =
+                    S3ClientOptions.builder().setPathStyleAccess(true).build();
+            s3.setS3ClientOptions(clientOptions);
+            LOGGER.fine("Using cutom endpoint:" + endpoint);
+        }
+
         return s3;
     }
 
+    private String getEndpoint() {
+        String urlWithoutQueryString = url.split("\\?")[0];
+        String parts[] = urlWithoutQueryString.split("/");
+        StringBuilder hostBuilder = new StringBuilder(parts[0]);
+        for (int i = 1; i < parts.length - 2; i++) {
+            hostBuilder.append("/").append(parts[i]);
+        }
+        return hostBuilder.toString();
+    }
+
     /**
-     *
      * @param s3Path the s3:// url style path
      * @return bucket and key parts of the given S3 path, IN THAT ORDER
      */
@@ -113,12 +138,12 @@ public class S3Connector {
         StringBuilder keyBuilder = new StringBuilder();
 
         String bucket = parts[2];
-        for (int i=3; i < parts.length; i++ ) {
+        for (int i = 3; i < parts.length; i++) {
             keyBuilder.append("/").append(parts[i]);
         }
         String key = keyBuilder.toString();
         key = key.startsWith("/") ? key.substring(1) : key;
 
-        return new String[] { bucket, key };
+        return new String[]{bucket, key};
     }
 }
