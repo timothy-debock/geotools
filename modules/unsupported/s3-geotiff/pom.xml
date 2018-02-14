@@ -21,7 +21,7 @@
   <parent>
     <artifactId>unsupported</artifactId>
     <groupId>org.geotools</groupId>
-    <version>19-SNAPSHOT</version>
+    <version>19-DOV-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -31,6 +31,11 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-s3</artifactId>
+      <version>1.11.36</version>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk</artifactId>
       <version>1.11.36</version>
     </dependency>
     <dependency>
