@@ -27,17 +27,18 @@ import com.amazonaws.services.s3.S3ClientOptions;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
  * Handles connecting to S3 and fetching parts
  */
 public class S3Connector {
-    private final static Logger LOGGER = Logger
-            .getLogger(S3Utils.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(S3Utils.class.getName());
 
     private String url;
 
@@ -98,36 +99,41 @@ public class S3Connector {
         }
 
         AmazonS3 s3;
-        if (useAnon) {
-            s3 = new AmazonS3Client(new AnonymousAWSCredentials());
-        } else {
-            AWSCredentials credentials = new BasicAWSCredentials("FAT7UNGHOR4ZTV2ORYH6", "VXN7pTVKj46aeUAqmnoaP16kJhYDW7alP9TRzxSO");
-            s3 = new AmazonS3Client(credentials);
-        }
+        //custom endpoint
+        if (url != null && !url.startsWith("s3://")) {
+            if(!url.contains("://")){
+                throw new IllegalArgumentException("Following this style: s3Alias://bucket/filename");
+            }
+            String s3Alias = url.split("://")[0];
+            String pahtToFile = url.split("://")[1];
 
-        s3.setRegion(Region.getRegion(region));
+            Properties prop = readProperties(s3Alias);
 
-        if (url != null && url.startsWith("http")) {
-            String endpoint = getEndpoint();
-            s3.setEndpoint(endpoint);
-            final S3ClientOptions clientOptions =
-                    S3ClientOptions.builder().setPathStyleAccess(true).build();
+            s3 = new AmazonS3Client(new BasicAWSCredentials(
+                    prop.getProperty(s3Alias + ".s3.user"),
+                    prop.getProperty(s3Alias + ".s3.password")));
+
+            final S3ClientOptions clientOptions = S3ClientOptions.builder().setPathStyleAccess(true).build();
             s3.setS3ClientOptions(clientOptions);
-            LOGGER.fine("Using cutom endpoint:" + endpoint);
+            String endpoint = prop.getProperty(s3Alias + ".s3.endpoint");
+            if(!endpoint.endsWith("/")){
+                endpoint = endpoint + "/";
+            }
+            s3.setEndpoint(endpoint);
+
+        //aws cli client
+        } else if (useAnon) {
+            s3 = new AmazonS3Client(new AnonymousAWSCredentials());
+            s3.setRegion(Region.getRegion(region));
+        } else {
+            s3 =  new AmazonS3Client();
+            s3.setRegion(Region.getRegion(region));
         }
 
         return s3;
     }
 
-    private String getEndpoint() {
-        String urlWithoutQueryString = url.split("\\?")[0];
-        String parts[] = urlWithoutQueryString.split("/");
-        StringBuilder hostBuilder = new StringBuilder(parts[0]);
-        for (int i = 1; i < parts.length - 2; i++) {
-            hostBuilder.append("/").append(parts[i]);
-        }
-        return hostBuilder.toString();
-    }
+
 
     /**
      * @param s3Path the s3:// url style path
@@ -145,5 +151,27 @@ public class S3Connector {
         key = key.startsWith("/") ? key.substring(1) : key;
 
         return new String[]{bucket, key};
+    }
+
+    private Properties readProperties(String s3Alias) {
+        Properties prop = new Properties();
+        try {
+            //load a properties file from class path, inside static method
+            prop.load(S3Connector.class.getClassLoader().getResourceAsStream("s3.properties"));
+            //check if the properties are not null.
+            if(prop.getProperty(s3Alias + ".s3.user") == null){
+                throw new IOException("s3.properties file does not contains value for:" + s3Alias + ".s3.user");
+            }
+            if(prop.getProperty(s3Alias + ".s3.password") == null){
+                throw new IOException("s3.properties file does not contains value for:" + s3Alias + ".s3.password");
+            }
+            if(prop.getProperty(s3Alias + ".s3.endpoint") == null){
+                throw new IOException("s3.properties file does not contains value for:" + s3Alias + ".s3.endpoint");
+            }
+        }
+        catch (IOException ex) {
+            LOGGER.severe(ex.getMessage());
+        }
+        return prop;
     }
 }

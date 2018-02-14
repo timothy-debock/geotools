@@ -38,14 +38,14 @@ import org.opengis.parameter.GeneralParameterValue;
  * Tests for the S3GeoTiffReader and S3ImageInputStream. These are very basic and ignored for
  * now since they rely on S3 access to run.
  */
+@Ignore
 public class S3GeoTiffReaderTest {
 
     @Test
 
     public void testGeotiffReader() throws IOException, URISyntaxException {
         S3GeoTiffReader reader = new S3GeoTiffReader(
-            new S3ImageInputStreamImpl(
-                "http://dov-minio-s3-on-1.vm.cumuli.be:9000/test/salinity.tif"));
+            new S3ImageInputStreamImpl("dov://test/salinity.tif"));
         GridCoverage2D coverage2D = reader.read(new GeneralParameterValue[0]);
         File expectedFile = getSalinityTestFile();
         ImageAssert.assertEquals(expectedFile, coverage2D.getRenderedImage(), 15);
@@ -62,7 +62,7 @@ public class S3GeoTiffReaderTest {
     @Test
     public void testBufferingOutputStream() throws IOException, URISyntaxException {
         S3ImageInputStreamImpl in =
-            new S3ImageInputStreamImpl("http://dov-minio-s3-on-1.vm.cumuli.be:9000/test/salinity.tif");
+            new S3ImageInputStreamImpl("dov://test/salinity.tif");
         FileImageInputStream fileIn = new FileImageInputStream(getSalinityTestFile());
         long readRemaining = fileIn.length();
         while (readRemaining > 0) {
@@ -91,7 +91,7 @@ public class S3GeoTiffReaderTest {
     @Test
     public void testImageInputStream() throws IOException, URISyntaxException {
         S3ImageInputStreamImpl in =
-            new S3ImageInputStreamImpl("http://dov-minio-s3-on-1.vm.cumuli.be:9000/test/salinity.tif");
+            new S3ImageInputStreamImpl("dov://test/salinity.tif");
         FileImageInputStream fileIn = new FileImageInputStream(getSalinityTestFile());
         int fileResult;
         int s3Result;
