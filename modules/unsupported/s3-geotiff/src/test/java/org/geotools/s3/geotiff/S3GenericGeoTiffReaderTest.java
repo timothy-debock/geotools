@@ -16,36 +16,46 @@
  */
 package org.geotools.s3.geotiff;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-
-import javax.imageio.stream.FileImageInputStream;
-
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.image.test.ImageAssert;
+import org.geotools.s3.S3Connector;
 import org.geotools.s3.S3ImageInputStreamImpl;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opengis.parameter.GeneralParameterValue;
 
+import javax.imageio.stream.FileImageInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
 
 /**
- * Tests for the S3GeoTiffReader and S3ImageInputStream. These are very basic and ignored for
- * now since they rely on S3 access to run.
+ *  Tests the S3GeoTiffReader and S3ImageInputStream for use with an Amazon S3 Compatible object storage server.
+ *  e.g. https://www.minio.io/
+ *  These are very basic and ignored for now since they rely on a S3 server to run.
+ *
+ * @author timothy de bock
  */
-public class S3GeoTiffReaderTest {
+@Ignore
+public class S3GenericGeoTiffReaderTest {
+
+    @Before
+    public  void before(){
+        System.setProperty(S3Connector.S3_GEOTIFF_CONFIG_PATH, "./src/test/resources/s3.properties");
+    }
 
     @Test
-    @Ignore
     public void testGeotiffReader() throws IOException, URISyntaxException {
         S3GeoTiffReader reader = new S3GeoTiffReader(
-            new S3ImageInputStreamImpl(
-                "s3://geoserver-ec-s3/salinity.tif"));
+            new S3ImageInputStreamImpl("dov://test/salinity.tif"));
         GridCoverage2D coverage2D = reader.read(new GeneralParameterValue[0]);
         File expectedFile = getSalinityTestFile();
         ImageAssert.assertEquals(expectedFile, coverage2D.getRenderedImage(), 15);
@@ -60,10 +70,9 @@ public class S3GeoTiffReaderTest {
      * @throws IOException if something goes wrong
      */
     @Test
-    @Ignore
     public void testBufferingOutputStream() throws IOException, URISyntaxException {
         S3ImageInputStreamImpl in =
-            new S3ImageInputStreamImpl("s3://geoserver-ec-s3/salinity.tif");
+            new S3ImageInputStreamImpl("dov://test/salinity.tif");
         FileImageInputStream fileIn = new FileImageInputStream(getSalinityTestFile());
         long readRemaining = fileIn.length();
         while (readRemaining > 0) {
@@ -90,10 +99,9 @@ public class S3GeoTiffReaderTest {
     }
 
     @Test
-    @Ignore
     public void testImageInputStream() throws IOException, URISyntaxException {
         S3ImageInputStreamImpl in =
-            new S3ImageInputStreamImpl("s3://geoserver-ec-s3/salinity.tif");
+            new S3ImageInputStreamImpl("dov://test/salinity.tif");
         FileImageInputStream fileIn = new FileImageInputStream(getSalinityTestFile());
         int fileResult;
         int s3Result;
@@ -108,12 +116,14 @@ public class S3GeoTiffReaderTest {
     }
 
     @Test
-    @Ignore
-    public void testAnonymousS3() throws IOException {
-        S3GeoTiffReader reader = new S3GeoTiffReader(
-                new S3ImageInputStreamImpl(
-                        "s3://landsat-pds/L8/001/002/LC80010022016230LGN00/LC80010022016230LGN00_B1.TIF" +
-                                "?useAnon=true&awsRegion=US_WEST_2"));
-        GridCoverage2D coverage2D = reader.read(new GeneralParameterValue[0]);
+    public void testS3GeoTiffFormat() throws MalformedURLException {
+        S3GeoTiffFormat format = new S3GeoTiffFormat();
+
+        Assert.assertTrue(format.accepts("s3://bucket/file.tiff"));
+        Assert.assertTrue(format.accepts("dov://bucket/file.tiff"));
+        Assert.assertFalse(format.accepts("foobar://bucket/file.tiff"));
+
     }
+
+
 }
