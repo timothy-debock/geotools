@@ -16,7 +16,6 @@
  */
 package org.geotools.s3;
 
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AnonymousAWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Region;
@@ -27,7 +26,9 @@ import com.amazonaws.services.s3.S3ClientOptions;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -40,9 +41,15 @@ import java.util.logging.Logger;
 public class S3Connector {
     private final static Logger LOGGER = Logger.getLogger(S3Utils.class.getName());
 
+    //The location of the propertie file
+    public static final String S3_GEOTIFF_CONFIG_PATH = "s3.properties.location";
+
+    private Properties prop;
+
     private String url;
 
     private String regionString;
+
     private boolean useAnon = false;
 
     public S3Connector(String regionString, boolean useAnon) {
@@ -154,23 +161,30 @@ public class S3Connector {
     }
 
     private Properties readProperties(String s3Alias) {
-        Properties prop = new Properties();
         try {
-            //load a properties file from class path, inside static method
-            prop.load(S3Connector.class.getClassLoader().getResourceAsStream("s3.properties"));
+            if (prop == null) {
+                prop = new Properties();
+                String property = System.getProperty(S3_GEOTIFF_CONFIG_PATH);
+                InputStream resourceAsStream = new FileInputStream(property);
+                prop.load(resourceAsStream);
+            }
             //check if the properties are not null.
             if(prop.getProperty(s3Alias + ".s3.user") == null){
-                throw new IOException("s3.properties file does not contains value for:" + s3Alias + ".s3.user");
+                throw new IllegalArgumentException("s3.properties file does not contains value for:"
+                        + s3Alias + ".s3.user");
             }
             if(prop.getProperty(s3Alias + ".s3.password") == null){
-                throw new IOException("s3.properties file does not contains value for:" + s3Alias + ".s3.password");
+                throw new IllegalArgumentException("s3.properties file does not contains value for:"
+                        + s3Alias + ".s3.password");
             }
             if(prop.getProperty(s3Alias + ".s3.endpoint") == null){
-                throw new IOException("s3.properties file does not contains value for:" + s3Alias + ".s3.endpoint");
+                throw new IllegalArgumentException("s3.properties file does not contains value for:"
+                        + s3Alias + ".s3.endpoint");
             }
         }
         catch (IOException ex) {
             LOGGER.severe(ex.getMessage());
+            throw new IllegalArgumentException("The properties could not be found.", ex);
         }
         return prop;
     }
