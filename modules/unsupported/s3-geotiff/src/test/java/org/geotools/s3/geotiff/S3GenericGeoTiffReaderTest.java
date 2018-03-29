@@ -20,7 +20,9 @@ import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.image.test.ImageAssert;
 import org.geotools.s3.S3Connector;
 import org.geotools.s3.S3ImageInputStreamImpl;
+import org.geotools.s3.S3Utils;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -32,6 +34,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -42,14 +45,23 @@ import static org.junit.Assert.assertEquals;
  *  e.g. https://www.minio.io/
  *  These are very basic and ignored for now since they rely on a S3 server to run.
  *
- * @author timothy de bock
+ * @author timothy de bock - timothy.debock.github@gmail.com
  */
-@Ignore
 public class S3GenericGeoTiffReaderTest {
+
+    private final static Logger LOGGER = Logger.getLogger(S3GenericGeoTiffReaderTest.class.getName());
 
     @Before
     public  void before(){
         System.setProperty(S3Connector.S3_GEOTIFF_CONFIG_PATH, "./src/test/resources/s3.properties");
+        S3GeoTiffReader reader = null;
+        //The s3 service should be available and contain the necessary files.
+        try {
+             reader = new S3GeoTiffReader(new S3ImageInputStreamImpl("dov://test/salinity.tif"));
+        } catch (Exception e) {
+            LOGGER.severe(e.getMessage());
+        }
+        Assume.assumeNotNull(reader);
     }
 
     @Test
