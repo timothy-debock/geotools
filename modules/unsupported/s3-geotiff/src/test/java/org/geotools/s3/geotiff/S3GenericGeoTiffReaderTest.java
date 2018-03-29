@@ -55,7 +55,7 @@ public class S3GenericGeoTiffReaderTest {
     @Test
     public void testGeotiffReader() throws IOException, URISyntaxException {
         S3GeoTiffReader reader = new S3GeoTiffReader(
-            new S3ImageInputStreamImpl("dov://test/salinity.tif"));
+            new S3ImageInputStreamImpl("main://test/salinity.tif"));
         GridCoverage2D coverage2D = reader.read(new GeneralParameterValue[0]);
         File expectedFile = getSalinityTestFile();
         ImageAssert.assertEquals(expectedFile, coverage2D.getRenderedImage(), 15);
@@ -72,7 +72,7 @@ public class S3GenericGeoTiffReaderTest {
     @Test
     public void testBufferingOutputStream() throws IOException, URISyntaxException {
         S3ImageInputStreamImpl in =
-            new S3ImageInputStreamImpl("dov://test/salinity.tif");
+            new S3ImageInputStreamImpl("main://test/salinity.tif");
         FileImageInputStream fileIn = new FileImageInputStream(getSalinityTestFile());
         long readRemaining = fileIn.length();
         while (readRemaining > 0) {
@@ -101,7 +101,7 @@ public class S3GenericGeoTiffReaderTest {
     @Test
     public void testImageInputStream() throws IOException, URISyntaxException {
         S3ImageInputStreamImpl in =
-            new S3ImageInputStreamImpl("dov://test/salinity.tif");
+            new S3ImageInputStreamImpl("main://test/salinity.tif");
         FileImageInputStream fileIn = new FileImageInputStream(getSalinityTestFile());
         int fileResult;
         int s3Result;
@@ -120,7 +120,7 @@ public class S3GenericGeoTiffReaderTest {
         S3GeoTiffFormat format = new S3GeoTiffFormat();
 
         Assert.assertTrue(format.accepts("s3://bucket/file.tiff"));
-        Assert.assertTrue(format.accepts("dov://bucket/file.tiff"));
+        Assert.assertTrue(format.accepts("main://bucket/file.tiff"));
         Assert.assertFalse(format.accepts("foobar://bucket/file.tiff"));
 
     }

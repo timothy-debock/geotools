@@ -163,10 +163,16 @@ public class S3Connector {
     private Properties readProperties(String s3Alias) {
         try {
             if (prop == null) {
-                prop = new Properties();
                 String property = System.getProperty(S3_GEOTIFF_CONFIG_PATH);
-                InputStream resourceAsStream = new FileInputStream(property);
-                prop.load(resourceAsStream);
+                if (property != null) {
+                    prop = new Properties();
+                    InputStream resourceAsStream = new FileInputStream(property);
+                    prop.load(resourceAsStream);
+                } else {
+                    throw new IOException("Properties are missing! " +
+                            "The system property 's3.properties.location' should be set " +
+                            "and contain the path to the s3.properties file.");
+                }
             }
             //check if the properties are not null.
             if(prop.getProperty(s3Alias + ".s3.user") == null){

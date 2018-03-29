@@ -80,8 +80,13 @@ public class S3GeoTiffFormat extends GeoTiffFormat {
             if (prop == null) {
                 prop = new Properties();
                 String property = System.getProperty(S3Connector.S3_GEOTIFF_CONFIG_PATH);
-                InputStream resourceAsStream = new FileInputStream(property);
-                prop.load(resourceAsStream);
+                if (property != null) {
+                    InputStream resourceAsStream = new FileInputStream(property);
+                    prop.load(resourceAsStream);
+                } else {
+                    LOGGER.severe("Properties are missing! The system property 's3.properties.location' should be set "
+                            + "and contain the path to the s3.properties file.");
+                }
             }
         } catch (IOException e) {
             LOGGER.severe(e.getMessage());
